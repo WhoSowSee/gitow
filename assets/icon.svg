@@ -1,0 +1,270 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 22 780 212"
+     fill="none">
+  <defs>
+    <style>
+      .anim {
+        animation-duration: 6000ms;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+        animation-fill-mode: both;
+      }
+
+      .t_trunk { stroke-dasharray: 36; animation-name: k_trunk; }
+      .t_gtop  { stroke-dasharray: 58; animation-name: k_gtop; }
+      .t_purp  { stroke-dasharray: 110; animation-name: k_purp; }
+
+      .t_frame { stroke-dasharray: 384; animation-name: k_frame; }
+      .t_head  { stroke-dasharray: 86; animation-name: k_head; }
+      .t_side  { stroke-dasharray: 90; animation-name: k_side; }
+
+      .t_dot   { animation-name: k_dot; }
+
+      .t_c1    { stroke-dasharray: 30; animation-name: k_c1; }
+      .t_c2    { stroke-dasharray: 46; animation-name: k_c2; }
+      .t_c3    { stroke-dasharray: 20; animation-name: k_c3; }
+      .t_c4    { stroke-dasharray: 40; animation-name: k_c4; }
+
+      .commit_clip {
+        animation-duration: 6000ms;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+        animation-fill-mode: both;
+      }
+
+      .clip_bottom { animation-name: k_clip_bottom; }
+      .clip_mid    { animation-name: k_clip_mid; }
+      .clip_purp   { animation-name: k_clip_purp; }
+      .clip_top    { animation-name: k_clip_top; }
+
+      @keyframes k_trunk {
+        0% { stroke-dashoffset: 36; }
+        15%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_gtop {
+        0%, 13% { stroke-dashoffset: 58; }
+        33%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_purp {
+        0%, 13% { stroke-dashoffset: 110; }
+        33%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_clip_bottom {
+        0% { y: 197px; height: 0px; }
+        7%, 100% { y: 183px; height: 14px; }
+      }
+
+      @keyframes k_clip_mid {
+        0%, 8% { y: 161px; height: 0px; }
+        15%, 100% { y: 147px; height: 14px; }
+      }
+
+      @keyframes k_clip_purp {
+        0%, 18% { y: 123px; height: 0px; }
+        25%, 100% { y: 109px; height: 14px; }
+      }
+
+      @keyframes k_clip_top {
+        0%, 26% { y: 103px; height: 0px; }
+        33%, 100% { y: 89px; height: 14px; }
+      }
+
+      @keyframes k_frame {
+        0%, 31% { stroke-dashoffset: 384; }
+        61%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_head {
+        0%, 31% { stroke-dashoffset: 86; }
+        61%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_side {
+        0%, 31% { stroke-dashoffset: 90; }
+        61%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_dot {
+        0%, 31% { opacity: 0; }
+        61%, 100% { opacity: 1; }
+      }
+
+      @keyframes k_c1 {
+        0%, 61% { stroke-dashoffset: 30; }
+        75%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_c2 {
+        0%, 67% { stroke-dashoffset: 46; }
+        81%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_c3 {
+        0%, 73% { stroke-dashoffset: 20; }
+        87%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @keyframes k_c4 {
+        0%, 80% { stroke-dashoffset: 40; }
+        97%, 100% { stroke-dashoffset: 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .anim {
+          animation: none;
+          stroke-dashoffset: 0;
+          opacity: 1;
+        }
+
+        .commit_clip {
+          animation: none;
+        }
+      }
+    </style>
+
+    <clipPath id="clip_commit_bottom" clipPathUnits="userSpaceOnUse">
+      <rect class="commit_clip clip_bottom" x="39" y="183" width="14" height="14" />
+    </clipPath>
+
+    <clipPath id="clip_commit_mid" clipPathUnits="userSpaceOnUse">
+      <rect class="commit_clip clip_mid" x="39" y="147" width="14" height="14" />
+    </clipPath>
+
+    <clipPath id="clip_commit_purp" clipPathUnits="userSpaceOnUse">
+      <rect class="commit_clip clip_purp" x="69" y="109" width="14" height="14" />
+    </clipPath>
+
+    <clipPath id="clip_commit_top" clipPathUnits="userSpaceOnUse">
+      <rect class="commit_clip clip_top" x="39" y="89" width="14" height="14" />
+    </clipPath>
+  </defs>
+
+  <g transform="translate(2 0)">
+    <rect x="16" y="24" width="224" height="208" rx="16" fill="#111116" stroke="#333340" stroke-width="4"/>
+
+    <rect x="35" y="37" width="12" height="12" rx="3" fill="#bf616a"/>
+    <rect x="55" y="37" width="12" height="12" rx="3" fill="#ebcb8b"/>
+    <rect x="75" y="37" width="12" height="12" rx="3" fill="#a3be8c"/>
+
+    <text x="100" y="48"
+          text-anchor="start"
+          font-family="monospace"
+          font-size="14"
+          fill="#6b7089"
+          letter-spacing="1">$ gitow</text>
+
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 46 190 L 46 96" stroke="#313244" stroke-width="6" />
+      <path d="M 46 154 C 70 154, 76 136, 76 116" stroke="#313244" stroke-width="6" />
+      <path d="M 84 116 L 126 116" stroke="#313244" stroke-width="4" />
+
+      <rect x="132" y="86" width="86" height="106" rx="4" stroke="#313244" stroke-width="4" />
+
+      <path d="M 132 102 L 218 102"
+            stroke="#313244"
+            stroke-width="4"
+            stroke-linecap="butt" />
+
+      <circle cx="204" cy="94" r="3" fill="#313244" stroke="none" />
+      <circle cx="204" cy="94" r="3" fill="#f38ba8" class="anim t_dot" stroke="none" />
+
+      <path d="M 152 102 L 152 192"
+            stroke="#313244"
+            stroke-width="4"
+            stroke-linecap="butt" />
+
+      <path d="M 160 118 L 190 118" stroke="#313244" stroke-width="4" />
+      <path d="M 160 134 L 206 134" stroke="#313244" stroke-width="4" />
+      <path d="M 160 150 L 180 150" stroke="#313244" stroke-width="4" />
+      <path d="M 160 166 L 200 166" stroke="#313244" stroke-width="4" />
+    </g>
+
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path class="anim t_trunk"
+            d="M 46 190 L 46 154"
+            stroke="#a6e3a1"
+            stroke-width="6" />
+
+      <path class="anim t_gtop"
+            d="M 46 154 L 46 96"
+            stroke="#a6e3a1"
+            stroke-width="6" />
+
+      <path class="anim t_purp"
+            d="M 46 154 C 70 154, 76 136, 76 116 L 126 116"
+            stroke="#cba6f7"
+            stroke-width="4" />
+
+      <g stroke="#111116" stroke-width="6" stroke-linecap="butt">
+        <path d="M 89 116 L 94 116" />
+        <path d="M 102 116 L 106 116" />
+        <path d="M 114 116 L 118 116" />
+      </g>
+
+      <rect x="132" y="86" width="86" height="106" rx="4"
+            class="anim t_frame"
+            stroke="#89b4fa"
+            stroke-width="4" />
+
+      <path class="anim t_head"
+            d="M 132 102 L 218 102"
+            stroke="#89b4fa"
+            stroke-width="4"
+            stroke-linecap="butt" />
+
+      <path class="anim t_side"
+            d="M 152 102 L 152 192"
+            stroke="#89b4fa"
+            stroke-width="4"
+            stroke-linecap="butt" />
+
+      <path class="anim t_c1" d="M 160 118 L 190 118" stroke="#f9e2af" stroke-width="4" />
+      <path class="anim t_c2" d="M 160 134 L 206 134" stroke="#a6e3a1" stroke-width="4" />
+      <path class="anim t_c3" d="M 160 150 L 180 150" stroke="#89dceb" stroke-width="4" />
+      <path class="anim t_c4" d="M 160 166 L 200 166" stroke="#f5c2e7" stroke-width="4" />
+    </g>
+
+    <g fill="#111116" stroke="#313244" stroke-width="3">
+      <circle cx="46" cy="190" r="5" />
+      <circle cx="46" cy="154" r="5" />
+      <circle cx="46" cy="96" r="5" />
+      <circle cx="76" cy="116" r="5" />
+    </g>
+
+    <g fill="#111116" stroke-width="3">
+      <circle cx="46" cy="190" r="5"
+              stroke="#a6e3a1"
+              clip-path="url(#clip_commit_bottom)" />
+
+      <circle cx="46" cy="154" r="5"
+              stroke="#a6e3a1"
+              clip-path="url(#clip_commit_mid)" />
+
+      <circle cx="76" cy="116" r="5"
+              stroke="#cba6f7"
+              clip-path="url(#clip_commit_purp)" />
+
+      <circle cx="46" cy="96" r="5"
+              stroke="#a6e3a1"
+              clip-path="url(#clip_commit_top)" />
+    </g>
+  </g>
+
+  <text
+    x="270"
+    y="128"
+    text-anchor="start"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif"
+    font-weight="900"
+    font-size="132"
+    fill="#89b4fa"
+    opacity="0.95"
+    dominant-baseline="middle"
+    letter-spacing="-4"
+  >gitow</text>
+</svg>
