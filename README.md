@@ -15,6 +15,10 @@
 
 <h2 align="center">Open Git repository pages from the command line</h2>
 
+<p align="center">
+  <img width="800px" alt="preview" src="https://github.com/user-attachments/assets/a75fd3d4-a8f4-4c1b-a853-887ad8d84488"/>
+</p>
+
 > [!TIP]
 > **Русская версия:** [README-RU.md](README-RU.md)
 
