@@ -15,6 +15,10 @@
 
 <h2 align="center">Открывайте страницы Git-репозиториев из командной строки</h2>
 
+<p align="center">
+  <img width="800px" alt="preview" src="https://github.com/user-attachments/assets/a75fd3d4-a8f4-4c1b-a853-887ad8d84488"/>
+</p>
+
 > [!TIP]
 > **English version:** [README.md](README.md)
 
