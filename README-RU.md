@@ -50,6 +50,28 @@ cargo install gitow
 
 Так вы установите последнюю опубликованную версию из crates.io в каталог бинарников Cargo.
 
+### Установка через Nix (Flake)
+
+```bash
+nix run github:WhoSowSee/gitow
+nix profile install github:WhoSowSee/gitow
+```
+
+`nix run` запускает без установки, `nix profile install` устанавливает бинарник в Nix-профиль.
+
+### Установка через Snap (Linux)
+
+Скачайте `.snap`-пакет для своей архитектуры из [GitHub Releases](https://github.com/WhoSowSee/gitow/releases): `amd64` для x86-64 или `arm64` для ARM64.
+С установленным `snapd` замените `./gitow.snap` ниже на путь к скачанному файлу:
+
+```bash
+sudo snap install --dangerous --classic ./gitow.snap
+snap run gitow
+```
+
+Флаг `--dangerous` разрешает установку локального пакета без подписи Snap Store; `--classic` нужен для доступа к репозиториям и системному браузеру.
+Запускайте `snap run gitow` из каталога Git-репозитория.
+
 ### Установка из исходников
 
 ```bash

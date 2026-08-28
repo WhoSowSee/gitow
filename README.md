@@ -50,6 +50,28 @@ cargo install gitow
 
 This installs the latest published release from crates.io into your Cargo bin directory.
 
+### Install with Nix (Flake)
+
+```bash
+nix run github:WhoSowSee/gitow
+nix profile install github:WhoSowSee/gitow
+```
+
+Use `nix run` to try it without installing, or `nix profile install` for a persistent install.
+
+### Install with Snap (Linux)
+
+Download the `.snap` package for your architecture from [GitHub Releases](https://github.com/WhoSowSee/gitow/releases): `amd64` for x86-64 or `arm64` for ARM64.
+With `snapd` installed, replace `./gitow.snap` below with the path to the downloaded file:
+
+```bash
+sudo snap install --dangerous --classic ./gitow.snap
+snap run gitow
+```
+
+`--dangerous` allows installing the local package without a Snap Store signature; `--classic` is required for access to repositories and the system browser.
+Run `snap run gitow` from your Git working tree.
+
 ### Install from source
 
 ```bash

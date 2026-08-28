@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  checks:
+    name: Rust ${{ matrix.toolchain }} / ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            toolchain: stable
+          - runner: macos-latest
+            toolchain: stable
+          - runner: windows-latest
+            toolchain: stable
+          - runner: ubuntu-latest
+            toolchain: "1.95.0"
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy, rustfmt
+
+      - name: Cache cargo build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ci-${{ matrix.toolchain }}
+
+      - name: Install actionlint
+        if: matrix.runner == 'ubuntu-latest' && matrix.toolchain == 'stable'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: actionlint@1.7.12
+          fallback: none
+
+      - name: Validate workflows
+        if: matrix.runner == 'ubuntu-latest' && matrix.toolchain == 'stable'
+        run: actionlint
+
+      - name: Check formatting
+        if: matrix.runner == 'ubuntu-latest' && matrix.toolchain == 'stable'
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        if: matrix.runner == 'ubuntu-latest' && matrix.toolchain == 'stable'
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: Run tests
+        run: cargo test --locked

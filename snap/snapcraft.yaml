@@ -1,0 +1,40 @@
+name: gitow
+title: gitow
+base: core24
+version: git
+summary: Open Git repository pages in your browser
+description: |
+  gitow opens repository, branch, commit, issue, pull request, and release pages
+  from a Git working tree. Git and the Linux browser launcher are included.
+license: MIT
+website: https://github.com/WhoSowSee/gitow
+source-code: https://github.com/WhoSowSee/gitow
+issues: https://github.com/WhoSowSee/gitow/issues
+
+grade: stable
+# Repositories, SSH configuration, and BROWSER commands can live outside home.
+confinement: classic
+
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
+  arm64:
+    build-on: [arm64]
+    build-for: [arm64]
+
+apps:
+  gitow:
+    command: bin/gitow
+    environment:
+      PATH: "$SNAP/usr/bin:$SNAP/bin:$PATH"
+
+parts:
+  gitow:
+    plugin: rust
+    source: .
+    build-attributes:
+      - enable-patchelf
+    stage-packages:
+      - git
+      - xdg-utils

@@ -1,0 +1,282 @@
+name: Build binaries
+
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_NAME: gitow
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    name: Verify crates.io package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate release tag
+        id: version
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "$version" && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::The release tag must match Cargo.toml: $version or v$version" >&2
+            exit 1
+          fi
+          prerelease=false
+          if [[ "${version%%+*}" == *-* ]]; then
+            prerelease=true
+          fi
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify publishable package
+        run: cargo publish --dry-run --locked
+
+  build:
+    name: Binary ${{ matrix.target }}
+    needs: [checks, package]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+            builder: cargo
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-latest
+            builder: cross
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cargo
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            builder: cross
+          - target: i686-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cross
+          - target: riscv64gc-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cross
+          - target: sparc64-unknown-linux-gnu
+            runner: ubuntu-latest
+            builder: cross
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+            builder: cargo
+          - target: x86_64-apple-darwin
+            runner: macos-latest
+            builder: cargo
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            builder: cargo
+          - target: aarch64-pc-windows-msvc
+            runner: windows-latest
+            builder: cargo
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.builder == 'cargo' && matrix.target || '' }}
+
+      - name: Cache cargo build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.builder == 'cross'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross@0.2.5
+          fallback: none
+
+      - name: Build native release binary
+        if: matrix.builder == 'cargo'
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Build cross-compiled release binary
+        if: matrix.builder == 'cross'
+        run: cross build --release --locked --target ${{ matrix.target }}
+
+      - name: Package Unix zip
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          binary="target/${{ matrix.target }}/release/${PROJECT_NAME}"
+          test -x "$binary"
+          mkdir -p artifacts
+          zip -j "artifacts/${PROJECT_NAME}-${{ matrix.target }}.zip" "$binary" LICENSE README.md README-RU.md
+
+      - name: Package Windows zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $binary = "target/${{ matrix.target }}/release/${env:PROJECT_NAME}.exe"
+          if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) {
+            throw "Binary artifact not found: $binary"
+          }
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -LiteralPath $binary, LICENSE, README.md, README-RU.md -DestinationPath "artifacts/${env:PROJECT_NAME}-${{ matrix.target }}.zip"
+
+      - name: Upload archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: gitow-${{ matrix.target }}
+          path: artifacts/*.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  snap:
+    name: Snap package ${{ matrix.arch }}
+    needs: [checks, package]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install LXD and Snapcraft
+        run: |
+          sudo groupadd --force --system lxd
+          sudo usermod --append --groups lxd runner
+          sudo snap install lxd
+          sudo lxd init --auto
+          sudo iptables -P FORWARD ACCEPT
+          sudo snap install --channel 8.x/stable --classic snapcraft
+
+      - name: Build snap
+        run: sudo -u runner -E snapcraft pack --use-lxd --build-for=${{ matrix.arch }}
+
+      - name: Collect snap
+        run: |
+          shopt -s nullglob
+          snaps=("${PROJECT_NAME}"_*_${{ matrix.arch }}.snap)
+          if [ "${#snaps[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one Snap artifact for ${{ matrix.arch }}" >&2
+            exit 1
+          fi
+          mkdir -p artifacts
+          mv -- "${snaps[0]}" "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+
+      - name: Smoke-test installed snap
+        run: |
+          sudo snap install --dangerous --classic "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
+          /snap/bin/gitow --help
+          test "$(/snap/bin/gitow --print https://github.com/WhoSowSee/gitow.git main)" = "https://github.com/WhoSowSee/gitow/tree/main"
+
+      - name: Upload snap
+        uses: actions/upload-artifact@v7
+        with:
+          name: gitow-snap-${{ matrix.arch }}
+          path: artifacts/*.snap
+          if-no-files-found: error
+          compression-level: 0
+
+  nix:
+    name: Nix package
+    needs: [checks, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Evaluate flake outputs
+        run: nix flake check --all-systems --no-build --no-update-lock-file --print-build-logs
+
+      - name: Build Nix package
+        run: nix build .#packages.x86_64-linux.default --no-update-lock-file --print-build-logs
+
+      - name: Smoke-test Nix binary
+        run: |
+          result/bin/gitow --help
+          test "$(PATH='' result/bin/gitow --print https://github.com/WhoSowSee/gitow.git main)" = "https://github.com/WhoSowSee/gitow/tree/main"
+
+  release:
+    name: Publish GitHub release
+    needs: [checks, package, build, snap, nix]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: gitow-*
+          path: dist
+          merge-multiple: true
+
+      - name: Prepare release files
+        run: |
+          shopt -s nullglob
+          files=(dist/"${PROJECT_NAME}"-*.zip dist/"${PROJECT_NAME}"-*.snap)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::No release artifacts found" >&2
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            base=${file##*/}
+            mv -- "$file" "dist/${PROJECT_NAME}-${GITHUB_REF_NAME}-${base#"${PROJECT_NAME}"-}"
+          done
+          (cd dist && sha256sum -- *.zip *.snap > SHA256SUMS)
+          git for-each-ref --format='%(contents)' "$GITHUB_REF" > release-notes.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          body_path: release-notes.md
+          generate_release_notes: true
+          prerelease: ${{ needs.package.outputs.prerelease == 'true' }}
+          fail_on_unmatched_files: true
