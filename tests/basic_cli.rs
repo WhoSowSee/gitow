@@ -7,11 +7,24 @@ use support::{assert_printed_url, binary, configure_remote, create_sandbox, git}
 
 #[test]
 fn prints_help() {
-    binary()
-        .arg("-h")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Usage: gitow"));
+    binary().arg("-h").assert().success().stdout(
+        predicate::str::contains("Usage: gitow").and(predicate::str::contains("-v, --version")),
+    );
+}
+
+#[test]
+fn prints_version_without_a_repository() {
+    let temp = TempDir::new().expect("temp dir");
+
+    for flag in ["--version", "-v"] {
+        binary()
+            .arg(flag)
+            .current_dir(temp.path())
+            .assert()
+            .success()
+            .stdout(format!("gitow {}\n", env!("CARGO_PKG_VERSION")))
+            .stderr("");
+    }
 }
 
 #[test]

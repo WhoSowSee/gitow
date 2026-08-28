@@ -124,6 +124,7 @@ gitow --print
 - `-s, --suffix <SUFFIX>` - appends an arbitrary suffix to the generated URL.
 - `-p, --print` - prints the URL instead of launching a browser.
 - `-h, --help` - shows the help text.
+- `-v, --version` - shows the program version.
 
 ### Common workflows
 

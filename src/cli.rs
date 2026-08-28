@@ -1,4 +1,4 @@
-use clap::{ArgGroup, Parser};
+use clap::{Arg, ArgAction, ArgGroup, Parser};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpenTarget {
@@ -15,7 +15,15 @@ pub enum OpenTarget {
     name = "gitow",
     bin_name = "gitow",
     about = "Open the repository website in your browser.",
+    version,
     disable_version_flag = true,
+    arg(
+        Arg::new("version")
+            .short('v')
+            .long("version")
+            .action(ArgAction::Version)
+            .help("Print version")
+    ),
     group(
         ArgGroup::new("target")
             .args(["commit", "issue", "pull_requests", "commits_page", "releases_page"])
