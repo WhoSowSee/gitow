@@ -29,7 +29,7 @@ jobs:
           - runner: windows-latest
             toolchain: stable
           - runner: ubuntu-latest
-            toolchain: "1.95.0"
+            toolchain: "1.88.0"
 
     steps:
       - name: Checkout sources

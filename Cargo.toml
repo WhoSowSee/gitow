@@ -2,7 +2,7 @@
 name = "gitow"
 version = "1.0.0"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.88"
 license = "MIT"
 description = "Open Git remotes and repository pages in your browser from the CLI"
 repository = "https://github.com/WhoSowSee/gitow"
@@ -11,15 +11,11 @@ documentation = "https://docs.rs/gitow"
 readme = "README.md"
 keywords = ["git", "cli", "browser", "repository", "remote"]
 categories = ["command-line-utilities", "development-tools"]
-include = [
-    "/Cargo.lock",
-    "/Cargo.toml",
-    "/LICENSE",
-    "/README.md",
-    "/README-RU.md",
-    "/assets/icon.svg",
-    "/src/**",
-    "/tests/**",
+exclude = [
+    "/.github",
+    "/snap",
+    "/flake.nix",
+    "/flake.lock",
 ]
 
 [dependencies]

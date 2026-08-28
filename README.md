@@ -37,7 +37,7 @@
 > ## Required dependencies:
 >
 > - Git
-> - Rust 1.95 or newer
+> - Rust 1.88 or newer
 > - Platform browser launcher or a `BROWSER` command
 
 ## Installation
