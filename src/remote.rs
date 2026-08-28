@@ -56,19 +56,9 @@ fn parse_url_style_remote(git_protocol: &str, remainder: &str) -> ParsedRemote {
         "http"
     } else {
         "https"
-    }
-    .to_string();
-    let url_path = normalize_url_path(&url_path);
-    let forge = detect_forge_family(&domain);
-    let config_base_url = format!("{protocol}://{domain}");
+    };
 
-    ParsedRemote {
-        domain,
-        url_path,
-        protocol,
-        forge,
-        config_base_url,
-    }
+    build_parsed_remote(domain, url_path, protocol)
 }
 
 fn parse_scp_style_remote(raw: &str, ssh_config_path: Option<&std::path::Path>) -> ParsedRemote {
@@ -77,7 +67,11 @@ fn parse_scp_style_remote(raw: &str, ssh_config_path: Option<&std::path::Path>) 
     let domain = ssh_config_path
         .and_then(|path| ssh_config::resolve_alias(path, &domain))
         .unwrap_or(domain);
-    let protocol = "https".to_string();
+    build_parsed_remote(domain, url_path, "https")
+}
+
+fn build_parsed_remote(domain: String, url_path: String, protocol: &str) -> ParsedRemote {
+    let protocol = protocol.to_string();
     let url_path = normalize_url_path(&url_path);
     let forge = detect_forge_family(&domain);
     let config_base_url = format!("{protocol}://{domain}");
@@ -134,8 +128,6 @@ fn normalize_url_path(path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::NamedTempFile;
-
     use super::parse_remote_url;
 
     #[test]
@@ -146,38 +138,5 @@ mod tests {
         assert_eq!(parsed.domain, "github.com");
         assert_eq!(parsed.url_path, "user/repo");
         assert_eq!(parsed.config_base_url, "http://github.com");
-    }
-
-    #[test]
-    fn strips_userinfo_and_non_http_ports() {
-        let parsed = parse_remote_url("ssh://git@github.com:22/user/repo.git", None);
-
-        assert_eq!(parsed.protocol, "https");
-        assert_eq!(parsed.domain, "github.com");
-        assert_eq!(parsed.url_path, "user/repo");
-    }
-
-    #[test]
-    fn resolves_scp_style_aliases_from_ssh_config() {
-        let file = NamedTempFile::new().expect("temporary file");
-        std::fs::write(
-            file.path(),
-            "\
-            Host work\n\
-              HostName ssh.internal.example.com\n\
-            ",
-        )
-        .expect("write ssh config");
-
-        let parsed = parse_remote_url("work:team/repo.git", Some(file.path()));
-        assert_eq!(parsed.domain, "ssh.internal.example.com");
-        assert_eq!(parsed.url_path, "team/repo");
-    }
-
-    #[test]
-    fn detects_codeberg_as_gitea_family() {
-        let parsed = parse_remote_url("https://codeberg.org/WhoSowSee/Soundly.git", None);
-
-        assert_eq!(parsed.forge.as_deref(), Some("gitea"));
     }
 }

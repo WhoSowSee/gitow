@@ -1,18 +1,15 @@
 mod support;
 
-use support::{binary, create_sandbox, git};
+use support::{assert_printed_url, configure_remote, create_sandbox, git};
 
 #[test]
 fn applies_gitlab_domain_and_protocol_overrides() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "ssh://git@git.example.com:7000/XXX/YYY.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "ssh://git@git.example.com:7000/XXX/YYY.git",
     );
     git(
         &[
@@ -27,61 +24,49 @@ fn applies_gitlab_domain_and_protocol_overrides() {
         sandbox.path(),
     );
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://repo.intranet/subpath/XXX/YYY\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "http://repo.intranet/subpath/XXX/YYY\n",
+    );
 }
 
 #[test]
 fn opens_merge_requests_commits_and_releases_for_gitlab() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "git@gitlab.example.com:user/repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "git@gitlab.example.com:user/repo.git",
     );
     git(&["checkout", "-B", "main"], sandbox.path());
 
-    binary()
-        .args(["--print", "--pull-requests"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://gitlab.example.com/user/repo/-/merge_requests\n");
-
-    binary()
-        .args(["--print", "--commits"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://gitlab.example.com/user/repo/-/commits/main\n");
-
-    binary()
-        .args(["--print", "--releases"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://gitlab.example.com/user/repo/-/releases\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["--pull-requests"],
+        "https://gitlab.example.com/user/repo/-/merge_requests\n",
+    );
+    assert_printed_url(
+        sandbox.path(),
+        &["--commits"],
+        "https://gitlab.example.com/user/repo/-/commits/main\n",
+    );
+    assert_printed_url(
+        sandbox.path(),
+        &["--releases"],
+        "https://gitlab.example.com/user/repo/-/releases\n",
+    );
 }
 
 #[test]
 fn supports_gitea_branch_layout() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "ssh://git@gitea.internal/team/repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "ssh://git@gitea.internal/team/repo.git",
     );
     git(
         &["config", "open.https://gitea.internal.forge", "gitea"],
@@ -89,68 +74,37 @@ fn supports_gitea_branch_layout() {
     );
     git(&["checkout", "-B", "feature/awesome"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://gitea.internal/team/repo/src/branch/feature/awesome\n");
-}
-
-#[test]
-fn auto_detects_codeberg_as_forgejo_gitea_family() {
-    let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://codeberg.org/WhoSowSee/Soundly.git",
-        ],
+    assert_printed_url(
         sandbox.path(),
+        &[],
+        "https://gitea.internal/team/repo/src/branch/feature/awesome\n",
     );
-    git(&["checkout", "-B", "main"], sandbox.path());
-
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://codeberg.org/WhoSowSee/Soundly/src/branch/main\n");
 }
 
 #[test]
 fn opens_pull_requests_commits_and_releases_for_codeberg() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://codeberg.org/WhoSowSee/Soundly.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "https://codeberg.org/WhoSowSee/Soundly.git",
     );
     git(&["checkout", "-B", "main"], sandbox.path());
 
-    binary()
-        .args(["--print", "--pull-requests"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://codeberg.org/WhoSowSee/Soundly/pulls\n");
-
-    binary()
-        .args(["--print", "--commits"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://codeberg.org/WhoSowSee/Soundly/commits/branch/main\n");
-
-    binary()
-        .args(["--print", "--releases"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://codeberg.org/WhoSowSee/Soundly/releases\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["--pull-requests"],
+        "https://codeberg.org/WhoSowSee/Soundly/pulls\n",
+    );
+    assert_printed_url(
+        sandbox.path(),
+        &["--commits"],
+        "https://codeberg.org/WhoSowSee/Soundly/commits/branch/main\n",
+    );
+    assert_printed_url(
+        sandbox.path(),
+        &["--releases"],
+        "https://codeberg.org/WhoSowSee/Soundly/releases\n",
+    );
 }

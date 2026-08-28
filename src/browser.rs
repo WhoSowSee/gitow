@@ -35,109 +35,51 @@ pub fn open_urls(urls: &[String], print_only: bool) -> Result<()> {
 fn open_with_system_default(url: &str) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
-        let status = Command::new("cmd")
-            .args(["/C", "start", "", url])
-            .status()
-            .map_err(|source| GitowError::BrowserCommand {
-                command: "cmd /C start".to_string(),
-                source,
-            })?;
-
-        if status.success() {
-            return Ok(());
-        }
-
-        Err(GitowError::BrowserCommandFailed {
-            command: "cmd /C start".to_string(),
-            status,
-        })
+        run_browser_command("cmd", &["/C", "start", "", url], "cmd /C start")
     }
 
     #[cfg(target_os = "macos")]
     {
-        let status = Command::new("open").arg(url).status().map_err(|source| {
-            GitowError::BrowserCommand {
-                command: "open".to_string(),
-                source,
-            }
-        })?;
-
-        if status.success() {
-            return Ok(());
-        }
-
-        return Err(GitowError::BrowserCommandFailed {
-            command: "open".to_string(),
-            status,
-        });
+        run_browser_command("open", &[url], "open")
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
         if is_wsl() {
-            let status =
-                Command::new("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe")
-                    .args(["-NoProfile", "Start", url])
-                    .status()
-                    .map_err(|source| GitowError::BrowserCommand {
-                        command: "powershell.exe -NoProfile Start".to_string(),
-                        source,
-                    })?;
-
-            if status.success() {
-                return Ok(());
-            }
-
-            return Err(GitowError::BrowserCommandFailed {
-                command: "powershell.exe -NoProfile Start".to_string(),
-                status,
-            });
+            return run_browser_command(
+                "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+                &["-NoProfile", "Start", url],
+                "powershell.exe -NoProfile Start",
+            );
         }
 
-        let status = Command::new("xdg-open")
-            .arg(url)
-            .status()
-            .map_err(|source| GitowError::BrowserCommand {
-                command: "xdg-open".to_string(),
-                source,
-            })?;
-
-        if status.success() {
-            return Ok(());
-        }
-
-        Err(GitowError::BrowserCommandFailed {
-            command: "xdg-open".to_string(),
-            status,
-        })
+        run_browser_command("xdg-open", &[url], "xdg-open")
     }
 }
 
 fn spawn_browser_command(browser: &str, url: &str) -> Result<()> {
-    let status = if cfg!(target_os = "windows") && browser.eq_ignore_ascii_case("start") {
-        Command::new("cmd")
-            .args(["/C", "start", "", url])
-            .status()
-            .map_err(|source| GitowError::BrowserCommand {
-                command: "cmd /C start".to_string(),
-                source,
-            })?
+    if cfg!(target_os = "windows") && browser.eq_ignore_ascii_case("start") {
+        run_browser_command("cmd", &["/C", "start", "", url], "cmd /C start")
     } else {
-        Command::new(browser)
-            .arg(url)
-            .status()
-            .map_err(|source| GitowError::BrowserCommand {
-                command: browser.to_string(),
-                source,
-            })?
-    };
+        run_browser_command(browser, &[url], browser)
+    }
+}
+
+fn run_browser_command(executable: &str, args: &[&str], command: &str) -> Result<()> {
+    let status = Command::new(executable)
+        .args(args)
+        .status()
+        .map_err(|source| GitowError::BrowserCommand {
+            command: command.to_string(),
+            source,
+        })?;
 
     if status.success() {
         return Ok(());
     }
 
     Err(GitowError::BrowserCommandFailed {
-        command: browser.to_string(),
+        command: command.to_string(),
         status,
     })
 }

@@ -3,7 +3,7 @@ mod support;
 use predicates::prelude::*;
 use tempfile::TempDir;
 
-use support::{binary, create_sandbox, git};
+use support::{assert_printed_url, binary, configure_remote, create_sandbox, git};
 
 #[test]
 fn prints_help() {
@@ -70,33 +70,24 @@ fn validates_repository_file_exists() {
 fn appends_suffix_and_file_path() {
     let sandbox = create_sandbox();
 
-    binary()
-        .args(["--print", "--file", "readme.txt", "--suffix", "pulls"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/paulirish/git-open/tree/master/readme.txt/pulls\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["--file", "readme.txt", "--suffix", "pulls"],
+        "https://github.com/paulirish/git-open/tree/master/readme.txt/pulls\n",
+    );
 }
 
 #[test]
 fn preserves_http_urls_and_ports() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "http://github.com:99/user/repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "http://github.com:99/user/repo.git",
     );
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://github.com:99/user/repo\n");
+    assert_printed_url(sandbox.path(), &[], "http://github.com:99/user/repo\n");
 }
 
 #[test]
@@ -106,17 +97,9 @@ fn resolves_instead_of_rewrites() {
         &["config", "url.http://example.com/.insteadOf", "ex:"],
         sandbox.path(),
     );
-    git(
-        &["remote", "set-url", "origin", "ex:example.git"],
-        sandbox.path(),
-    );
+    configure_remote(sandbox.path(), "set-url", "origin", "ex:example.git");
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://example.com/example\n");
+    assert_printed_url(sandbox.path(), &[], "http://example.com/example\n");
 }
 
 #[test]
@@ -135,10 +118,7 @@ fn resolves_ssh_aliases_from_custom_ssh_config() {
         ",
     )
     .expect("write ssh config");
-    git(
-        &["remote", "set-url", "origin", "basic:user/repo.git"],
-        sandbox.path(),
-    );
+    configure_remote(sandbox.path(), "set-url", "origin", "basic:user/repo.git");
 
     binary()
         .arg("--print")

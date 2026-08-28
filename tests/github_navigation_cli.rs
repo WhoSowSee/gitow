@@ -2,7 +2,7 @@ mod support;
 
 use std::{path::Path, process::Command};
 
-use support::{binary, create_sandbox, git};
+use support::{assert_printed_url, configure_remote, create_sandbox, git};
 
 fn git_output(args: &[&str], cwd: &Path) -> String {
     let output = Command::new("git")
@@ -21,12 +21,11 @@ fn git_output(args: &[&str], cwd: &Path) -> String {
 fn opens_github_repository_root_for_master() {
     let sandbox = create_sandbox();
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/paulirish/git-open\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://github.com/paulirish/git-open\n",
+    );
 }
 
 #[test]
@@ -34,91 +33,64 @@ fn opens_github_branch_urls() {
     let sandbox = create_sandbox();
     git(&["checkout", "-B", "feature/mybranch"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/paulirish/git-open/tree/feature/mybranch\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://github.com/paulirish/git-open/tree/feature/mybranch\n",
+    );
 }
 
 #[test]
-fn prefers_origin_over_tracked_remote_when_both_exist() {
+fn origin_precedes_tracked_remote_then_falls_back_to_it() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "add",
-            "fork",
-            "git@github.com:userfork/git-open.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "add",
+        "fork",
+        "git@github.com:userfork/git-open.git",
     );
     git(&["config", "branch.master.remote", "fork"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/paulirish/git-open\n");
-}
-
-#[test]
-fn uses_tracked_remote_when_origin_is_missing() {
-    let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "add",
-            "fork",
-            "git@github.com:userfork/git-open.git",
-        ],
+    assert_printed_url(
         sandbox.path(),
+        &[],
+        "https://github.com/paulirish/git-open\n",
     );
-    git(&["config", "branch.master.remote", "fork"], sandbox.path());
+
     git(&["remote", "remove", "origin"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/userfork/git-open\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://github.com/userfork/git-open\n",
+    );
 }
 
 #[test]
 fn explicit_remote_and_branch_override_defaults() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "add",
-            "upstream",
-            "git@github.com:upstream/repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "add",
+        "upstream",
+        "git@github.com:upstream/repo.git",
     );
 
-    binary()
-        .args(["--print", "upstream", "release/2026.04"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/upstream/repo/tree/release/2026.04\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["upstream", "release/2026.04"],
+        "https://github.com/upstream/repo/tree/release/2026.04\n",
+    );
 }
 
 #[test]
 fn opens_upstream_branch_from_git_config() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "add",
-            "upstreamRemote",
-            "git@github.com:user/upstream-repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "add",
+        "upstreamRemote",
+        "git@github.com:user/upstream-repo.git",
     );
     git(&["checkout", "-B", "mybranch"], sandbox.path());
     git(
@@ -135,12 +107,11 @@ fn opens_upstream_branch_from_git_config() {
     );
     git(&["remote", "remove", "origin"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/user/upstream-repo/tree/myupstream/mybranch\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://github.com/user/upstream-repo/tree/myupstream/mybranch\n",
+    );
 }
 
 #[test]
@@ -148,14 +119,8 @@ fn opens_current_commit() {
     let sandbox = create_sandbox();
     let sha = git_output(&["rev-parse", "HEAD"], sandbox.path());
 
-    binary()
-        .args(["--print", "--commit"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout(format!(
-            "https://github.com/paulirish/git-open/commit/{sha}\n"
-        ));
+    let expected = format!("https://github.com/paulirish/git-open/commit/{sha}\n");
+    assert_printed_url(sandbox.path(), &["--commit"], &expected);
 }
 
 #[test]
@@ -163,10 +128,9 @@ fn opens_inferred_issue_for_github() {
     let sandbox = create_sandbox();
     git(&["checkout", "-B", "issues/#12"], sandbox.path());
 
-    binary()
-        .args(["--print", "--issue"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://github.com/paulirish/git-open/issues/12\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["--issue"],
+        "https://github.com/paulirish/git-open/issues/12\n",
+    );
 }

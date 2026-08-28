@@ -36,3 +36,17 @@ pub fn create_sandbox() -> TempDir {
 pub fn binary() -> AssertCommand {
     AssertCommand::cargo_bin("gitow").expect("gitow binary")
 }
+
+pub fn assert_printed_url(cwd: &Path, args: &[&str], expected: &str) {
+    binary()
+        .arg("--print")
+        .args(args)
+        .current_dir(cwd)
+        .assert()
+        .success()
+        .stdout(expected.as_bytes().to_vec());
+}
+
+pub fn configure_remote(cwd: &Path, action: &str, name: &str, url: &str) {
+    git(&["remote", action, name, url], cwd);
+}

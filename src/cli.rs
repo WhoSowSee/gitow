@@ -102,3 +102,24 @@ impl Cli {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use clap::Parser;
+
+    use super::{Cli, OpenTarget};
+
+    #[test]
+    fn short_target_flags_select_expected_target() {
+        for (flag, expected) in [
+            ("-c", OpenTarget::CurrentCommit),
+            ("-i", OpenTarget::Issue),
+            ("-m", OpenTarget::PullRequests),
+            ("-C", OpenTarget::Commits),
+            ("-r", OpenTarget::Releases),
+        ] {
+            let cli = Cli::try_parse_from(["gitow", flag]).expect("short target flag");
+            assert_eq!(cli.target(), expected);
+        }
+    }
+}

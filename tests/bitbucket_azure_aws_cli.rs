@@ -2,63 +2,52 @@ mod support;
 
 use predicates::prelude::*;
 
-use support::{binary, create_sandbox, git};
+use support::{assert_printed_url, binary, configure_remote, create_sandbox, git};
 
 #[test]
 fn opens_bitbucket_cloud_source_view() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://bitbucket.org/guyzmo/git-repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "https://bitbucket.org/guyzmo/git-repo.git",
     );
     git(&["checkout", "-B", "bugfix/conftest_fix"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://bitbucket.org/guyzmo/git-repo/src/bugfix/conftest_fix\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://bitbucket.org/guyzmo/git-repo/src/bugfix/conftest_fix\n",
+    );
 }
 
 #[test]
 fn opens_bitbucket_server_browse_url() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://user@mybb.domain.com/root/context/scm/ppp/rrr.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "https://user@mybb.domain.com/root/context/scm/ppp/rrr.git",
     );
     git(&["checkout", "-B", "develop"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("https://mybb.domain.com/root/context/projects/ppp/repos/rrr/browse?at=develop\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://mybb.domain.com/root/context/projects/ppp/repos/rrr/browse?at=develop\n",
+    );
 }
 
 #[test]
 fn rejects_releases_for_bitbucket_cloud() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://bitbucket.org/guyzmo/git-repo.git",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "https://bitbucket.org/guyzmo/git-repo.git",
     );
 
     binary()
@@ -74,84 +63,67 @@ fn rejects_releases_for_bitbucket_cloud() {
 #[test]
 fn opens_visual_studio_branch_and_issue_urls() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "http://tfs.example.com:8080/Project/Folder/_git/Repository",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "http://tfs.example.com:8080/Project/Folder/_git/Repository",
     );
     git(&["checkout", "-B", "mybranch"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://tfs.example.com:8080/Project/Folder/_git/Repository?version=GBmybranch\n");
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "http://tfs.example.com:8080/Project/Folder/_git/Repository?version=GBmybranch\n",
+    );
 
     git(&["checkout", "-B", "bugfix-36"], sandbox.path());
-    binary()
-        .args(["--print", "--issue"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://tfs.example.com:8080/Project/Folder/_workitems?id=36\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["--issue"],
+        "http://tfs.example.com:8080/Project/Folder/_workitems?id=36\n",
+    );
 }
 
 #[test]
 fn opens_pull_requests_and_commits_for_azure_devops() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "http://tfs.example.com:8080/Project/Folder/_git/Repository",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "http://tfs.example.com:8080/Project/Folder/_git/Repository",
     );
     git(&["checkout", "-B", "main"], sandbox.path());
 
-    binary()
-        .args(["--print", "--pull-requests"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://tfs.example.com:8080/Project/Folder/_git/Repository/pullrequests\n");
-
-    binary()
-        .args(["--print", "--commits"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout("http://tfs.example.com:8080/Project/Folder/_git/Repository/commits?itemVersion=GBmain\n");
+    assert_printed_url(
+        sandbox.path(),
+        &["--pull-requests"],
+        "http://tfs.example.com:8080/Project/Folder/_git/Repository/pullrequests\n",
+    );
+    assert_printed_url(
+        sandbox.path(),
+        &["--commits"],
+        "http://tfs.example.com:8080/Project/Folder/_git/Repository/commits?itemVersion=GBmain\n",
+    );
 }
 
 #[test]
 fn opens_aws_codecommit_repository_and_rejects_issues() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/repo",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/repo",
     );
     git(&["checkout", "-B", "mybranch"], sandbox.path());
 
-    binary()
-        .arg("--print")
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout(
-            "https://us-east-1.console.aws.amazon.com/codecommit/home?region=us-east-1#/repository/repo/browse/mybranch/--/\n",
-        );
+    assert_printed_url(
+        sandbox.path(),
+        &[],
+        "https://us-east-1.console.aws.amazon.com/codecommit/home?region=us-east-1#/repository/repo/browse/mybranch/--/\n",
+    );
 
     binary()
         .args(["--print", "--issue"])
@@ -166,31 +138,21 @@ fn opens_aws_codecommit_repository_and_rejects_issues() {
 #[test]
 fn opens_pull_requests_and_commits_for_codecommit() {
     let sandbox = create_sandbox();
-    git(
-        &[
-            "remote",
-            "set-url",
-            "origin",
-            "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/repo",
-        ],
+    configure_remote(
         sandbox.path(),
+        "set-url",
+        "origin",
+        "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/repo",
     );
 
-    binary()
-        .args(["--print", "--pull-requests"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout(
-            "https://us-east-1.console.aws.amazon.com/codecommit/home?region=us-east-1#/repository/repo/pull-requests\n",
-        );
-
-    binary()
-        .args(["--print", "--commits"])
-        .current_dir(sandbox.path())
-        .assert()
-        .success()
-        .stdout(
-            "https://us-east-1.console.aws.amazon.com/codecommit/home?region=us-east-1#/repository/repo/commits\n",
-        );
+    assert_printed_url(
+        sandbox.path(),
+        &["--pull-requests"],
+        "https://us-east-1.console.aws.amazon.com/codecommit/home?region=us-east-1#/repository/repo/pull-requests\n",
+    );
+    assert_printed_url(
+        sandbox.path(),
+        &["--commits"],
+        "https://us-east-1.console.aws.amazon.com/codecommit/home?region=us-east-1#/repository/repo/commits\n",
+    );
 }
