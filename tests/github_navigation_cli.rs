@@ -43,7 +43,7 @@ fn opens_github_branch_urls() {
 }
 
 #[test]
-fn prefers_tracked_remote_when_branch_has_one() {
+fn prefers_origin_over_tracked_remote_when_both_exist() {
     let sandbox = create_sandbox();
     git(
         &[
@@ -55,6 +55,29 @@ fn prefers_tracked_remote_when_branch_has_one() {
         sandbox.path(),
     );
     git(&["config", "branch.master.remote", "fork"], sandbox.path());
+
+    binary()
+        .arg("--print")
+        .current_dir(sandbox.path())
+        .assert()
+        .success()
+        .stdout("https://github.com/paulirish/git-open\n");
+}
+
+#[test]
+fn uses_tracked_remote_when_origin_is_missing() {
+    let sandbox = create_sandbox();
+    git(
+        &[
+            "remote",
+            "add",
+            "fork",
+            "git@github.com:userfork/git-open.git",
+        ],
+        sandbox.path(),
+    );
+    git(&["config", "branch.master.remote", "fork"], sandbox.path());
+    git(&["remote", "remove", "origin"], sandbox.path());
 
     binary()
         .arg("--print")
@@ -110,6 +133,7 @@ fn opens_upstream_branch_from_git_config() {
         &["config", "branch.mybranch.remote", "upstreamRemote"],
         sandbox.path(),
     );
+    git(&["remote", "remove", "origin"], sandbox.path());
 
     binary()
         .arg("--print")

@@ -48,10 +48,16 @@ pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
 
         remotes
     } else {
+        let origin_remote = repository
+            .remotes()?
+            .into_iter()
+            .find(|remote| remote == "origin");
+
         vec![
             cli.remote
                 .clone()
                 .or(default_remote)
+                .or(origin_remote)
                 .or(tracked_remote)
                 .unwrap_or_else(|| "origin".to_string()),
         ]

@@ -122,8 +122,8 @@ gitow --print
 By default, `gitow` opens:
 
 1. `open.default.remote`, if configured.
-2. The current branch's tracked remote, if configured.
-3. `origin`.
+2. `origin`, if configured.
+3. The current branch's tracked remote, if configured.
 
 For the ref, it uses the selected branch's upstream branch when available, otherwise the current branch. In detached `HEAD` state, it falls back to an exact tag and then to the current commit SHA.
 
