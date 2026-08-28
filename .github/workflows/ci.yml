@@ -1,10 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
   workflow_call:
 
 permissions:
@@ -50,10 +46,16 @@ jobs:
 
       - name: Install actionlint
         if: matrix.runner == 'ubuntu-latest' && matrix.toolchain == 'stable'
-        uses: taiki-e/install-action@v2
-        with:
-          tool: actionlint@1.7.12
-          fallback: none
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --proto '=https' --tlsv1.2 --location --fail --show-error --silent --retry 5 \
+            --output "$archive" \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 "$RUNNER_TEMP/actionlint" "$HOME/.local/bin/actionlint"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Validate workflows
         if: matrix.runner == 'ubuntu-latest' && matrix.toolchain == 'stable'
