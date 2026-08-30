@@ -15,8 +15,18 @@ pub fn run(cli: Cli, cwd: &Path) -> Result<()> {
 }
 
 pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
-    if let Some(package_name) = &cli.crates_io {
-        let url = cargo::crates_io_url(cwd, package_name.as_deref())?;
+    if let Some(package_names) = &cli.crates_io {
+        if !package_names.is_empty() {
+            return package_names
+                .iter()
+                .map(|package_name| {
+                    cargo::crates_io_url(cwd, Some(package_name.as_str()))
+                        .map(|url| with_suffix(url, cli.suffix.as_deref()))
+                })
+                .collect();
+        }
+
+        let url = cargo::crates_io_url(cwd, None)?;
         return Ok(vec![with_suffix(url, cli.suffix.as_deref())]);
     }
 

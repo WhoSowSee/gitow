@@ -42,7 +42,7 @@ Examples:
   gitow origin gitlab --branch feature/my-branch
   gitow --commit
   gitow -x
-  gitow -x serde
+  gitow -x serde clap
   gitow --issue
   gitow -m
   gitow -C
@@ -56,14 +56,15 @@ pub struct Cli {
     #[arg(short = 'c', long = "commit")]
     pub commit: bool,
 
-    /// Open a Cargo package on crates.io. Defaults to the current package.
+    /// Open Cargo packages on crates.io. Defaults to the current package.
     #[arg(
         short = 'x',
         long = "crates-io",
         value_name = "PACKAGE",
+        num_args = 0..,
         conflicts_with_all = ["all_remotes", "remotes", "branch"]
     )]
-    pub crates_io: Option<Option<String>>,
+    pub crates_io: Option<Vec<String>>,
 
     /// Open the issue inferred from the current branch name.
     #[arg(short = 'i', long = "issue")]

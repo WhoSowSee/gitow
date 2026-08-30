@@ -108,7 +108,11 @@ fn opens_crates_io_page_for_cargo_package_without_git_repository() {
 fn handles_named_and_implicit_crates_outside_cargo_projects() {
     let temp = TempDir::new().expect("temp dir");
 
-    assert_crates_io_url(temp.path(), &["-x", "serde"], "serde");
+    assert_printed_url(
+        temp.path(),
+        &["-x", "k580-core", "kr580"],
+        "https://crates.io/crates/k580-core\nhttps://crates.io/crates/kr580\n",
+    );
 
     binary()
         .args(["--print", "--crates-io"])
