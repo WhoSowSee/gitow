@@ -3,7 +3,10 @@ use std::{
     process::{Command, Output},
 };
 
-use crate::error::{GitowError, Result};
+use crate::{
+    error::{GitowError, Result},
+    remote::{ParsedRemote, parse_remote_url},
+};
 
 #[derive(Debug, Clone)]
 pub struct Repository {
@@ -44,7 +47,20 @@ impl Repository {
         self.optional_git(["config", "open.default.remote"])
     }
 
-    pub fn resolve_remote_url(&self, remote: &str) -> Result<String> {
+    pub fn scoped_config(&self, scope: &str, key: &str) -> Result<Option<String>> {
+        self.optional_git(["config", scope, "--get", key])
+    }
+
+    pub fn configured_remote(&self, remote: &str) -> Result<ParsedRemote> {
+        let git_url = self.resolve_remote_url(remote)?;
+        let parsed = parse_remote_url(&git_url, default_ssh_config_path().as_deref());
+        let domain = self.open_urlmatch("domain", &parsed.config_base_url)?;
+        let protocol = self.open_urlmatch("protocol", &parsed.config_base_url)?;
+        let forge = self.open_urlmatch("forge", &parsed.config_base_url)?;
+        Ok(parsed.with_overrides(domain, protocol, forge))
+    }
+
+    fn resolve_remote_url(&self, remote: &str) -> Result<String> {
         let output = self.run_git(["remote", "get-url", remote])?;
         if !output.status.success() {
             if looks_like_remote_spec(remote) {
@@ -78,7 +94,7 @@ impl Repository {
         Ok(remotes)
     }
 
-    pub fn open_urlmatch(&self, key: &str, open_url: &str) -> Result<Option<String>> {
+    fn open_urlmatch(&self, key: &str, open_url: &str) -> Result<Option<String>> {
         let config_key = format!("open.{key}");
         self.optional_git(["config", "--get-urlmatch", &config_key, open_url])
     }
@@ -149,7 +165,7 @@ impl Repository {
     }
 }
 
-pub fn default_ssh_config_path() -> Option<PathBuf> {
+pub(crate) fn default_ssh_config_path() -> Option<PathBuf> {
     std::env::var_os("GITOW_SSH_CONFIG")
         .map(PathBuf::from)
         .or_else(|| {
@@ -163,6 +179,6 @@ fn trim_stdout(stdout: &[u8]) -> Option<&str> {
     (!trimmed.is_empty()).then_some(trimmed)
 }
 
-fn looks_like_remote_spec(remote: &str) -> bool {
+pub(crate) fn looks_like_remote_spec(remote: &str) -> bool {
     remote.contains("://") || remote.contains('@') || remote.contains(':')
 }

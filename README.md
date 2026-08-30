@@ -110,6 +110,8 @@ gitow upstream
 gitow origin gitlab
 gitow git@github.com:owner/repo.git
 gitow https://gitlab.example.com/group/project.git --branch main
+gitow --repo mdv
+gitow -R codeberg/whosowsee/mdv
 gitow --print
 ```
 
@@ -117,6 +119,7 @@ gitow --print
 
 - `-c, --commit` - opens the current commit in the forge UI.
 - `-x, --crates-io [PACKAGE]...` - opens the named packages on crates.io, or the current Cargo package when names are omitted.
+- `-R, --repo <REPOSITORY>...` - opens remote repositories without requiring a local checkout.
 - `-i, --issue` - opens the issue inferred from the current branch name.
 - `-m, --pull-requests` - opens the pull requests or merge requests page.
 - `-C, --commits` - opens the commits page for the selected branch or ref.
@@ -144,6 +147,29 @@ gitow --file src/main.rs
 gitow --suffix actions
 gitow --print
 ```
+
+## Remote repository selection
+
+`-R` and `--repo` open one or more remote repositories independently of the current checkout:
+
+```bash
+gitow -R mdv
+gitow -R gitlab/mdv
+gitow -R rust-lang/rust
+gitow -R codeberg/whosowsee/mdv
+gitow --repo gitlab/group/project codeberg/owner/repository
+```
+
+Repository specs are resolved as follows:
+
+- `FORGE/OWNER/REPOSITORY` uses a short public forge alias. Supported aliases are `github`, `gitlab`, `codeberg`, `bitbucket`, `gitea`, and `azure`.
+- `OWNER/REPOSITORY` defaults to GitHub.
+- A full domain, URL, or SSH remote is used directly.
+- A bare `REPOSITORY`, or `FORGE/REPOSITORY`, inherits the owner in this order: global Git `open.default.owner`, local repository `open.default.owner`, then the owner and forge of the current `origin`.
+
+Configure the owner with `git config --global open.default.owner OWNER`, or omit `--global` for a repository-local value. A bare repository defaults to GitHub when the owner comes from config; an explicit alias such as `gitlab/mdv` changes the forge. An owner inherited from `origin` also inherits that remote's forge.
+
+Repository selection supports `--pull-requests`, `--releases`, `--suffix`, and `--print`. Local-state targets such as `--commit`, `--issue`, `--commits`, `--branch`, and `--file` are rejected with `--repo`.
 
 ## Remote and branch selection
 

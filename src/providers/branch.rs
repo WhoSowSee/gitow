@@ -5,6 +5,11 @@ use super::context::{detect_provider, provider_context};
 use super::types::{ProviderKind, ProviderUrlParts};
 use super::utils::{digits_only, encode_path_segment, extract_first_number};
 
+pub fn build_repository_url(remote: &ParsedRemote) -> String {
+    let kind = detect_provider(remote);
+    provider_context(remote, kind).repo_url
+}
+
 pub fn build_branch_url_parts(
     remote: &ParsedRemote,
     remote_ref: &str,

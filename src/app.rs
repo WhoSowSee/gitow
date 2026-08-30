@@ -4,9 +4,9 @@ use crate::{
     browser, cargo,
     cli::{Cli, OpenTarget},
     error::{GitowError, Result},
-    git::{Repository, default_ssh_config_path},
+    git::Repository,
     providers::{self, RepoPage},
-    remote::parse_remote_url,
+    repo_selector::resolve_repository_specs,
 };
 
 pub fn run(cli: Cli, cwd: &Path) -> Result<()> {
@@ -15,6 +15,10 @@ pub fn run(cli: Cli, cwd: &Path) -> Result<()> {
 }
 
 pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
+    if let Some(repository_specs) = &cli.repositories {
+        return build_urls_for_repositories(cli, cwd, repository_specs);
+    }
+
     if let Some(package_names) = &cli.crates_io {
         if !package_names.is_empty() {
             return package_names
@@ -96,6 +100,34 @@ pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
     )
 }
 
+fn build_urls_for_repositories(
+    cli: &Cli,
+    cwd: &Path,
+    repository_specs: &[String],
+) -> Result<Vec<String>> {
+    let repositories = resolve_repository_specs(repository_specs, cwd)?;
+    let target = cli.target();
+
+    repositories
+        .iter()
+        .map(|repository| {
+            let url = match target {
+                OpenTarget::Branch => Ok(providers::build_repository_url(repository)),
+                OpenTarget::PullRequests => {
+                    providers::build_page_url(repository, RepoPage::PullRequests, "")
+                }
+                OpenTarget::Releases => {
+                    providers::build_page_url(repository, RepoPage::Releases, "")
+                }
+                OpenTarget::CurrentCommit | OpenTarget::Issue | OpenTarget::Commits => {
+                    unreachable!("clap rejects local-only targets with --repo")
+                }
+            }?;
+            Ok(with_suffix(url, cli.suffix.as_deref()))
+        })
+        .collect()
+}
+
 fn build_urls_for_remotes(
     repository: &Repository,
     cli: &Cli,
@@ -140,13 +172,7 @@ fn build_url_for_remote(
     branch: Option<&str>,
     target: OpenTarget,
 ) -> Result<String> {
-    let git_url = repository.resolve_remote_url(remote_name)?;
-    let ssh_config_path = default_ssh_config_path();
-    let parsed_remote = parse_remote_url(&git_url, ssh_config_path.as_deref());
-    let domain_override = repository.open_urlmatch("domain", &parsed_remote.config_base_url)?;
-    let protocol_override = repository.open_urlmatch("protocol", &parsed_remote.config_base_url)?;
-    let forge_override = repository.open_urlmatch("forge", &parsed_remote.config_base_url)?;
-    let remote = parsed_remote.with_overrides(domain_override, protocol_override, forge_override);
+    let remote = repository.configured_remote(remote_name)?;
 
     let open_url = match target {
         OpenTarget::Branch => {

@@ -110,13 +110,16 @@ gitow upstream
 gitow origin gitlab
 gitow git@github.com:owner/repo.git
 gitow https://gitlab.example.com/group/project.git --branch main
+gitow --repo mdv
+gitow -R codeberg/whosowsee/mdv
 gitow --print
 ```
 
 ### Цели навигации
 
 - `-c, --commit` - открыть текущий коммит в интерфейсе forge.
-- `-x, --crates-io [PACKAGE]...` - открыть указанные пакеты на crates.io, а без имён — текущий Cargo-пакет.
+- `-x, --crates-io [PACKAGE]...` - открыть указанные пакеты на crates.io, а без имён – текущий Cargo-пакет.
+- `-R, --repo <REPOSITORY>...` - открыть удалённые репозитории без локального checkout.
 - `-i, --issue` - открыть issue, извлечённую из имени текущей ветки.
 - `-m, --pull-requests` - открыть страницу pull request или merge request.
 - `-C, --commits` - открыть страницу коммитов выбранной ветки или ref.
@@ -144,6 +147,29 @@ gitow --file src/main.rs
 gitow --suffix actions
 gitow --print
 ```
+
+## Выбор удалённого репозитория
+
+`-R` и `--repo` открывают один или несколько удалённых репозиториев независимо от текущего checkout:
+
+```bash
+gitow -R mdv
+gitow -R gitlab/mdv
+gitow -R rust-lang/rust
+gitow -R codeberg/whosowsee/mdv
+gitow --repo gitlab/group/project codeberg/owner/repository
+```
+
+Repository spec разрешается по следующим правилам:
+
+- `FORGE/OWNER/REPOSITORY` использует короткий алиас публичного forge. Поддерживаются `github`, `gitlab`, `codeberg`, `bitbucket`, `gitea` и `azure`.
+- `OWNER/REPOSITORY` по умолчанию означает GitHub.
+- Полный домен, URL или SSH remote используется напрямую.
+- Голый `REPOSITORY` или `FORGE/REPOSITORY` наследует owner в следующем порядке: глобальный Git `open.default.owner`, локальный `open.default.owner` текущего репозитория, затем owner и forge текущего `origin`.
+
+Настройте owner командой `git config --global open.default.owner OWNER`; без `--global` значение будет локальным. Если owner взят из config, голое имя по умолчанию открывается на GitHub, а алиас вроде `gitlab/mdv` меняет forge. При fallback на `origin` наследуется и forge этого remote.
+
+Режим `--repo` поддерживает `--pull-requests`, `--releases`, `--suffix` и `--print`. Цели, зависящие от локального состояния – `--commit`, `--issue`, `--commits`, `--branch` и `--file` – отклоняются вместе с `--repo`.
 
 ## Выбор remote и ветки
 

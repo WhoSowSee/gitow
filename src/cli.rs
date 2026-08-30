@@ -40,6 +40,8 @@ pub enum OpenTarget {
 Examples:
   gitow
   gitow origin gitlab --branch feature/my-branch
+  gitow --repo mdv
+  gitow -R gitlab/group/project
   gitow --commit
   gitow -x
   gitow -x serde clap
@@ -65,6 +67,25 @@ pub struct Cli {
         conflicts_with_all = ["all_remotes", "remotes", "branch"]
     )]
     pub crates_io: Option<Vec<String>>,
+
+    /// Open remote repositories without requiring a local checkout.
+    #[arg(
+        short = 'R',
+        long = "repo",
+        value_name = "REPOSITORY",
+        num_args = 1..,
+        conflicts_with_all = [
+            "commit",
+            "crates_io",
+            "issue",
+            "commits_page",
+            "all_remotes",
+            "branch",
+            "file",
+            "remotes"
+        ]
+    )]
+    pub repositories: Option<Vec<String>>,
 
     /// Open the issue inferred from the current branch name.
     #[arg(short = 'i', long = "issue")]

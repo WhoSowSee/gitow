@@ -15,6 +15,14 @@ pub enum GitowError {
     #[error("No git remotes are configured")]
     NoRemotesConfigured,
 
+    #[error("Invalid repository spec: {0}")]
+    InvalidRepositorySpec(String),
+
+    #[error(
+        "Cannot infer a repository owner; set open.default.owner or use FORGE/OWNER/REPOSITORY"
+    )]
+    MissingRepositoryOwner,
+
     #[error("Not a Cargo project")]
     NotACargoProject,
 

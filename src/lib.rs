@@ -6,6 +6,7 @@ mod error;
 mod git;
 mod providers;
 mod remote;
+mod repo_selector;
 mod ssh_config;
 
 use std::process::ExitCode;
