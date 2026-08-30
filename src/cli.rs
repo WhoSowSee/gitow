@@ -14,7 +14,7 @@ pub enum OpenTarget {
 #[command(
     name = "gitow",
     bin_name = "gitow",
-    about = "Open the repository website in your browser.",
+    about = "Open repository and Cargo package pages in your browser.",
     version,
     disable_version_flag = true,
     arg(
@@ -26,7 +26,14 @@ pub enum OpenTarget {
     ),
     group(
         ArgGroup::new("target")
-            .args(["commit", "issue", "pull_requests", "commits_page", "releases_page"])
+            .args([
+                "commit",
+                "crates_io",
+                "issue",
+                "pull_requests",
+                "commits_page",
+                "releases_page"
+            ])
             .multiple(false)
     ),
     after_help = "\
@@ -34,6 +41,8 @@ Examples:
   gitow
   gitow upstream feature/my-branch
   gitow --commit
+  gitow -x
+  gitow -x serde
   gitow --issue
   gitow -m
   gitow -C
@@ -46,6 +55,15 @@ pub struct Cli {
     /// Open the current commit in the forge UI.
     #[arg(short = 'c', long = "commit")]
     pub commit: bool,
+
+    /// Open a Cargo package on crates.io. Defaults to the current package.
+    #[arg(
+        short = 'x',
+        long = "crates-io",
+        value_name = "PACKAGE",
+        conflicts_with_all = ["all_remotes", "remote", "branch"]
+    )]
+    pub crates_io: Option<Option<String>>,
 
     /// Open the issue inferred from the current branch name.
     #[arg(short = 'i', long = "issue")]
@@ -76,7 +94,14 @@ pub struct Cli {
         short = 'f',
         long = "file",
         value_name = "PATH",
-        conflicts_with_all = ["commit", "issue", "pull_requests", "commits_page", "releases_page"]
+        conflicts_with_all = [
+            "commit",
+            "crates_io",
+            "issue",
+            "pull_requests",
+            "commits_page",
+            "releases_page"
+        ]
     )]
     pub file: Option<String>,
 

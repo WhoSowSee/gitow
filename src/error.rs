@@ -15,6 +15,26 @@ pub enum GitowError {
     #[error("No git remotes are configured")]
     NoRemotesConfigured,
 
+    #[error("Not a Cargo project")]
+    NotACargoProject,
+
+    #[error("Failed to run cargo metadata: {0}")]
+    CargoMetadataCommand(#[source] io::Error),
+
+    #[error("cargo metadata failed: {0}")]
+    CargoMetadataCommandFailed(String),
+
+    #[error("Failed to parse cargo metadata: {0}")]
+    CargoMetadataParse(#[source] serde_json::Error),
+
+    #[error("Cargo workspace does not contain any packages")]
+    NoCargoPackages,
+
+    #[error(
+        "Cargo workspace contains multiple packages ({packages}); run gitow --crates-io from a package directory"
+    )]
+    AmbiguousCargoWorkspace { packages: String },
+
     #[error("Failed to run git {command}: {source}")]
     GitCommand {
         command: String,

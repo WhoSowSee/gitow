@@ -1,5 +1,6 @@
 mod app;
 mod browser;
+mod cargo;
 mod cli;
 mod error;
 mod git;

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::{
-    browser,
+    browser, cargo,
     cli::{Cli, OpenTarget},
     error::{GitowError, Result},
     git::{Repository, default_ssh_config_path},
@@ -15,6 +15,11 @@ pub fn run(cli: Cli, cwd: &Path) -> Result<()> {
 }
 
 pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
+    if let Some(package_name) = &cli.crates_io {
+        let url = cargo::crates_io_url(cwd, package_name.as_deref())?;
+        return Ok(vec![with_suffix(url, cli.suffix.as_deref())]);
+    }
+
     let repository = Repository::new(cwd);
     repository.ensure_work_tree()?;
     let target = cli.target();
@@ -102,7 +107,7 @@ fn build_url_for_remote(
     let forge_override = repository.open_urlmatch("forge", &parsed_remote.config_base_url)?;
     let remote = parsed_remote.with_overrides(domain_override, protocol_override, forge_override);
 
-    let mut open_url = match target {
+    let open_url = match target {
         OpenTarget::Branch => {
             let parts = providers::build_branch_url_parts(&remote, remote_ref, false)?;
             let mut open_url = parts.base_url;
@@ -142,10 +147,13 @@ fn build_url_for_remote(
         OpenTarget::Releases => providers::build_page_url(&remote, RepoPage::Releases, remote_ref)?,
     };
 
-    if let Some(suffix) = &cli.suffix {
-        open_url.push('/');
-        open_url.push_str(suffix);
-    }
+    Ok(with_suffix(open_url, cli.suffix.as_deref()))
+}
 
-    Ok(open_url)
+fn with_suffix(mut url: String, suffix: Option<&str>) -> String {
+    if let Some(suffix) = suffix {
+        url.push('/');
+        url.push_str(suffix);
+    }
+    url
 }

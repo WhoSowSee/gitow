@@ -26,6 +26,7 @@
 > **gitow - git open web.** A Rust CLI focused on opening repository web pages from the current working tree. It offers:
 >
 > - **Repository navigation** - Open repository roots, branches, commits, issues, pull requests, commit history, releases, tracked files, and custom URL suffixes.
+> - **Crates.io navigation** - Open a named package from any directory, or read the current package name from Cargo, with `-x` or `--crates-io`.
 > - **Remote resolution** - Resolve Git remote names, literal remote URLs, `insteadOf` rewrites, and SSH config aliases.
 > - **Branch-aware links** - Pick the upstream branch, current branch, exact tag, or current commit SHA depending on repository state.
 > - **Multi-remote workflow** - Open every configured remote with `--all-remotes`, keeping `origin` first.
@@ -115,6 +116,7 @@ gitow --print
 ### Navigation targets
 
 - `-c, --commit` - opens the current commit in the forge UI.
+- `-x, --crates-io [PACKAGE]` - opens the named package on crates.io, or the current Cargo package when the name is omitted.
 - `-i, --issue` - opens the issue inferred from the current branch name.
 - `-m, --pull-requests` - opens the pull requests or merge requests page.
 - `-C, --commits` - opens the commits page for the selected branch or ref.
@@ -130,6 +132,8 @@ gitow --print
 
 ```bash
 gitow --commit
+gitow -x
+gitow -x serde
 gitow --issue
 gitow --pull-requests
 gitow --commits
