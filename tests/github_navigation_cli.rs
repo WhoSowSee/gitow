@@ -2,7 +2,7 @@ mod support;
 
 use std::{path::Path, process::Command};
 
-use support::{assert_printed_url, configure_remote, create_sandbox, git};
+use support::{assert_printed_url, binary, configure_remote, create_sandbox, git};
 
 fn git_output(args: &[&str], cwd: &Path) -> String {
     let output = Command::new("git")
@@ -78,9 +78,41 @@ fn explicit_remote_and_branch_override_defaults() {
 
     assert_printed_url(
         sandbox.path(),
-        &["upstream", "release/2026.04"],
+        &["upstream", "--branch", "release/2026.04"],
         "https://github.com/upstream/repo/tree/release/2026.04\n",
     );
+}
+
+#[test]
+fn opens_existing_remotes_when_an_explicit_remote_is_missing() {
+    let sandbox = create_sandbox();
+    configure_remote(
+        sandbox.path(),
+        "add",
+        "gitlab",
+        "git@gitlab.com:mirror/repo.git",
+    );
+
+    binary()
+        .args(["--print", "origin", "missing", "gitlab"])
+        .current_dir(sandbox.path())
+        .assert()
+        .success()
+        .stdout("https://github.com/paulirish/git-open\nhttps://gitlab.com/mirror/repo\n")
+        .stderr("Git remote is not set for missing\n");
+}
+
+#[test]
+fn reports_every_missing_remote_when_none_exist() {
+    let sandbox = create_sandbox();
+
+    binary()
+        .args(["--print", "gitlab", "codeberg"])
+        .current_dir(sandbox.path())
+        .assert()
+        .failure()
+        .stdout("")
+        .stderr("Git remote is not set for gitlab\nGit remote is not set for codeberg\n");
 }
 
 #[test]

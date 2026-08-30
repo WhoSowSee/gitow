@@ -39,7 +39,7 @@ pub enum OpenTarget {
     after_help = "\
 Examples:
   gitow
-  gitow upstream feature/my-branch
+  gitow origin gitlab --branch feature/my-branch
   gitow --commit
   gitow -x
   gitow -x serde
@@ -61,7 +61,7 @@ pub struct Cli {
         short = 'x',
         long = "crates-io",
         value_name = "PACKAGE",
-        conflicts_with_all = ["all_remotes", "remote", "branch"]
+        conflicts_with_all = ["all_remotes", "remotes", "branch"]
     )]
     pub crates_io: Option<Option<String>>,
 
@@ -82,8 +82,12 @@ pub struct Cli {
     pub releases_page: bool,
 
     /// Open all configured remotes.
-    #[arg(short = 'a', long = "all-remotes", conflicts_with = "remote")]
+    #[arg(short = 'a', long = "all-remotes", conflicts_with = "remotes")]
     pub all_remotes: bool,
+
+    /// Branch name to open. Defaults to the current branch or detached ref.
+    #[arg(short = 'b', long = "branch", value_name = "BRANCH")]
+    pub branch: Option<String>,
 
     /// Append an arbitrary suffix to the generated URL.
     #[arg(short = 's', long = "suffix", value_name = "SUFFIX")]
@@ -109,13 +113,9 @@ pub struct Cli {
     #[arg(short = 'p', long = "print")]
     pub print: bool,
 
-    /// Git remote name or literal remote URL to open.
-    #[arg(index = 1)]
-    pub remote: Option<String>,
-
-    /// Branch name to open. Defaults to the current branch or detached ref.
-    #[arg(index = 2)]
-    pub branch: Option<String>,
+    /// Git remote names or literal remote URLs to open.
+    #[arg(value_name = "REMOTE")]
+    pub remotes: Vec<String>,
 }
 
 impl Cli {

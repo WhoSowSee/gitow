@@ -33,11 +33,6 @@ pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
         Some(branch) => repository.branch_upstream(branch)?,
         None => None,
     };
-    let tracked_remote = match branch.as_deref() {
-        Some(branch) => repository.branch_remote(branch)?,
-        None => None,
-    };
-    let default_remote = repository.default_open_remote()?;
 
     let remote_names = if cli.all_remotes {
         let mut remotes = repository.remotes()?;
@@ -52,23 +47,28 @@ pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
         }
 
         remotes
+    } else if !cli.remotes.is_empty() {
+        cli.remotes.clone()
     } else {
+        let tracked_remote = match branch.as_deref() {
+            Some(branch) => repository.branch_remote(branch)?,
+            None => None,
+        };
+        let default_remote = repository.default_open_remote()?;
         let origin_remote = repository
             .remotes()?
             .into_iter()
             .find(|remote| remote == "origin");
 
         vec![
-            cli.remote
-                .clone()
-                .or(default_remote)
+            default_remote
                 .or(origin_remote)
                 .or(tracked_remote)
                 .unwrap_or_else(|| "origin".to_string()),
         ]
     };
 
-    let remote_ref = if let Some(reference) = upstream_branch.clone().or_else(|| branch.clone()) {
+    let remote_ref = if let Some(reference) = upstream_branch.or_else(|| branch.clone()) {
         reference
     } else if let Some(tag) = repository.exact_tag()? {
         tag
@@ -76,19 +76,50 @@ pub fn resolve_urls(cli: &Cli, cwd: &Path) -> Result<Vec<String>> {
         repository.head_sha()?
     };
 
-    remote_names
-        .into_iter()
-        .map(|remote_name| {
-            build_url_for_remote(
-                &repository,
-                cli,
-                &remote_name,
-                &remote_ref,
-                branch.as_deref(),
-                target,
-            )
-        })
-        .collect()
+    build_urls_for_remotes(
+        &repository,
+        cli,
+        remote_names,
+        &remote_ref,
+        branch.as_deref(),
+        target,
+    )
+}
+
+fn build_urls_for_remotes(
+    repository: &Repository,
+    cli: &Cli,
+    remote_names: Vec<String>,
+    remote_ref: &str,
+    branch: Option<&str>,
+    target: OpenTarget,
+) -> Result<Vec<String>> {
+    let mut urls = Vec::with_capacity(remote_names.len());
+    let mut missing_remote_errors = Vec::new();
+
+    for remote_name in remote_names {
+        match build_url_for_remote(repository, cli, &remote_name, remote_ref, branch, target) {
+            Ok(url) => urls.push(url),
+            Err(error @ GitowError::MissingRemote(_)) => missing_remote_errors.push(error),
+            Err(error) => return Err(error),
+        }
+    }
+
+    let final_error = urls.is_empty().then(|| {
+        // The top-level runner prints this after the preceding errors.
+        missing_remote_errors
+            .pop()
+            .unwrap_or(GitowError::NoRemotesConfigured)
+    });
+
+    for error in missing_remote_errors {
+        eprintln!("{error}");
+    }
+
+    match final_error {
+        Some(error) => Err(error),
+        None => Ok(urls),
+    }
 }
 
 fn build_url_for_remote(

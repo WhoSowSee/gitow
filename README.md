@@ -29,7 +29,7 @@
 > - **Crates.io navigation** - Open a named package from any directory, or read the current package name from Cargo, with `-x` or `--crates-io`.
 > - **Remote resolution** - Resolve Git remote names, literal remote URLs, `insteadOf` rewrites, and SSH config aliases.
 > - **Branch-aware links** - Pick the upstream branch, current branch, exact tag, or current commit SHA depending on repository state.
-> - **Multi-remote workflow** - Open every configured remote with `--all-remotes`, keeping `origin` first.
+> - **Multi-remote workflow** - Open named remotes in argument order, or every configured remote with `--all-remotes`.
 > - **Script-friendly output** - Print generated URLs with `--print` or `BROWSER=echo` without launching a browser.
 > - **Short command surface** - Use one compact `gitow` binary for every navigation target.
 
@@ -99,7 +99,7 @@ cargo run --bin gitow -- --print
 ## Usage
 
 ```text
-gitow [OPTIONS] [REMOTE_OR_URL] [BRANCH]
+gitow [OPTIONS] [REMOTE_OR_URL]...
 ```
 
 Examples:
@@ -107,9 +107,9 @@ Examples:
 ```bash
 gitow
 gitow upstream
-gitow upstream feature/my-branch
+gitow origin gitlab
 gitow git@github.com:owner/repo.git
-gitow https://gitlab.example.com/group/project.git main
+gitow https://gitlab.example.com/group/project.git --branch main
 gitow --print
 ```
 
@@ -122,6 +122,7 @@ gitow --print
 - `-C, --commits` - opens the commits page for the selected branch or ref.
 - `-r, --releases` - opens the releases page where the forge supports it.
 - `-a, --all-remotes` - opens every configured remote.
+- `-b, --branch <BRANCH>` - opens the selected branch instead of the current branch or detached ref.
 - `-f, --file <PATH>` - opens a repository-relative tracked file.
 - `-s, --suffix <SUFFIX>` - appends an arbitrary suffix to the generated URL.
 - `-p, --print` - prints the URL instead of launching a browser.
@@ -146,13 +147,15 @@ gitow --print
 
 ## Remote and branch selection
 
-By default, `gitow` opens:
+Explicit remote arguments are opened in the order provided. Every missing named remote is reported to standard error and skipped when at least one other remote resolves successfully. The command fails after reporting every requested remote if none exist.
+
+Without explicit remotes, `gitow` opens:
 
 1. `open.default.remote`, if configured.
 2. `origin`, if configured.
 3. The current branch's tracked remote, if configured.
 
-For the ref, it uses the selected branch's upstream branch when available, otherwise the current branch. In detached `HEAD` state, it falls back to an exact tag and then to the current commit SHA.
+Select a branch with `-b` or `--branch`. For the ref, `gitow` uses the selected branch's upstream branch when available, otherwise the selected or current branch. In detached `HEAD` state, it falls back to an exact tag and then to the current commit SHA.
 
 ## Supported remote repositories
 
