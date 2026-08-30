@@ -270,13 +270,91 @@ jobs:
             mv -- "$file" "dist/${PROJECT_NAME}-${GITHUB_REF_NAME}-${base#"${PROJECT_NAME}"-}"
           done
           (cd dist && sha256sum -- *.zip *.snap > SHA256SUMS)
-          git for-each-ref --format='%(contents)' "$GITHUB_REF" > release-notes.md
+
+      - name: Extract release metadata
+        id: tag_meta
+        run: |
+          # Fallback order: changelog entry -> tag annotation -> commit message
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          COMMIT=$(git rev-list -n 1 "$TAG")
+          TAG_MESSAGE=$(git for-each-ref "refs/tags/$TAG" --format='%(contents)')
+          if [ -z "${TAG_MESSAGE//[$'\r\n\t ']/}" ]; then
+            TAG_MESSAGE=$(git tag -l "$TAG" --format='%(contents)')
+          fi
+          COMMIT_MESSAGE=$(git show -s --format=%B "$COMMIT")
+          CHANGELOG_SECTION=""
+          if [ -f CHANGELOG.md ]; then
+            CHANGELOG_SECTION=$(awk -v ver="$VERSION" '
+              function trim(str) {
+                sub(/^[[:space:]]+/, "", str)
+                sub(/[[:space:]]+$/, "", str)
+                return str
+              }
+              /^## \[/ {
+                if (match($0, /^## \[([^\]]+)\]/, m)) {
+                  heading = trim(m[1])
+                  if (found && heading != ver) {
+                    exit
+                  }
+                  if (!found && heading == ver) {
+                    found = 1
+                    next
+                  }
+                }
+              }
+              found {
+                if (!printed) {
+                  if ($0 ~ /^[[:space:]]*$/) {
+                    next
+                  }
+                  printed = 1
+                  print
+                  next
+                }
+                print
+              }
+            ' CHANGELOG.md)
+          fi
+          if [ -n "$(printf '%s' "$CHANGELOG_SECTION" | tr -d $'\r\n\t ')" ]; then
+            MESSAGE="$CHANGELOG_SECTION"
+          elif [ -n "$(printf '%s' "$TAG_MESSAGE" | tr -d $'\r\n\t ')" ]; then
+            MESSAGE="$TAG_MESSAGE"
+          else
+            MESSAGE="$COMMIT_MESSAGE"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          printf 'message<<EOF\n%s\nEOF\n' "$MESSAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub release notes
+        id: gh_notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RESPONSE=$(gh api repos/${GITHUB_REPOSITORY}/releases/generate-notes \
+            -f tag_name="${{ steps.tag_meta.outputs.tag }}" \
+            -f target_commitish="${{ steps.tag_meta.outputs.commit }}")
+          BODY=$(echo "$RESPONSE" | jq -r '.body // ""')
+          printf 'body<<EOF\n%s\nEOF\n' "$BODY" >> "$GITHUB_OUTPUT"
+
+      - name: Compose release body
+        run: |
+          {
+            printf '%s\n\n' "$TAG_MESSAGE"
+            echo '---'
+            echo
+            printf '%s\n' "$GENERATED_NOTES"
+          } > release-notes.md
+        env:
+          TAG_MESSAGE: ${{ steps.tag_meta.outputs.message }}
+          GENERATED_NOTES: ${{ steps.gh_notes.outputs.body }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
           files: dist/*
           body_path: release-notes.md
-          generate_release_notes: true
           prerelease: ${{ needs.package.outputs.prerelease == 'true' }}
           fail_on_unmatched_files: true
