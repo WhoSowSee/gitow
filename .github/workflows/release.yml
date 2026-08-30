@@ -200,7 +200,7 @@ jobs:
         run: |
           sudo snap install --dangerous --classic "artifacts/${PROJECT_NAME}-${{ matrix.arch }}.snap"
           /snap/bin/gitow --help
-          test "$(/snap/bin/gitow --print https://github.com/WhoSowSee/gitow.git main)" = "https://github.com/WhoSowSee/gitow/tree/main"
+          test "$(/snap/bin/gitow --print https://github.com/WhoSowSee/gitow.git --branch main)" = "https://github.com/WhoSowSee/gitow/tree/main"
 
       - name: Upload snap
         uses: actions/upload-artifact@v7
@@ -233,7 +233,7 @@ jobs:
       - name: Smoke-test Nix binary
         run: |
           result/bin/gitow --help
-          test "$(PATH='' result/bin/gitow --print https://github.com/WhoSowSee/gitow.git main)" = "https://github.com/WhoSowSee/gitow/tree/main"
+          test "$(PATH='' result/bin/gitow --print https://github.com/WhoSowSee/gitow.git --branch main)" = "https://github.com/WhoSowSee/gitow/tree/main"
 
   release:
     name: Publish GitHub release
