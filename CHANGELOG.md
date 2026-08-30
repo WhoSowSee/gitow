@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.0.0] - 2026-08-30
+
+### Breaking Changes
+
+- Changed: positional arguments now accept multiple remotes, while branch selection moved from positional `[BRANCH]` to `-b` and `--branch`
+
+### Features
+
+- Added: crates.io package navigation through `-x` and `--crates-io` for the current or an explicitly named Cargo package
+- Added: support for opening multiple crates.io packages in argument order
+- Added: remote repository navigation through `-R` and `--repo`, including forge aliases and inherited repository owners
+
+### Maintenance
+
+- Fixed: Snap and Nix package smoke tests now pass the branch explicitly for detached tag checkouts
+
 ## [2.0.0] - 2026-08-28
 
 ### Breaking Changes
